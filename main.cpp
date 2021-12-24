@@ -68,10 +68,10 @@ int dio0  = 7;
 int RST   = 0;
 
 // Set spreading factor (SF7 - SF12)
-sf_t sf = SF7;
+sf_t sf = SF10;
 
 // Set center frequency
-uint32_t  freq = 868100000; // in Mhz! (868.1)
+uint32_t  freq = 915800000; // in Mhz! (915.8)
 
 // Set location
 float lat=0.0;
@@ -85,7 +85,7 @@ static char description[64] = "";                        /* used for free form d
 
 // define servers
 // TODO: use host names and dns
-#define SERVER1 "54.72.145.119"    // The Things Network: croft.thethings.girovito.nl
+#define SERVER1 "13.56.119.10"    // The Things Network us
 //#define SERVER2 "192.168.1.10"      // local
 #define PORT 1700                   // The port on which to send data
 
@@ -527,11 +527,23 @@ void receivepacket() {
             fflush(stdout);
 
         } // received a message
-
+        else
+        {
+            printf("CONNECTION ERROR: Package arrive, but couldn't be received\n");
+        }
     } // dio0=1
+    else
+    {
+        //printf("CONNECTION ERROR: No package received\n");
+    }
 }
 
-int main () {
+int main (int argc, char* argv[]) {
+
+	if(argc >= 1) {
+		freq = atol(argv[1]);
+		printf("Frequency set to %i\n", freq);
+	}
 
     struct timeval nowtime;
     uint32_t lasttime;
@@ -590,4 +602,3 @@ int main () {
     return (0);
 
 }
-
