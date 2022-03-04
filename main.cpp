@@ -162,7 +162,12 @@ static char description[64] = "";                        /* used for free form d
 #define TX_BUFF_SIZE  2048
 #define STATUS_SIZE	  1024
 
-void die(const char *s)
+//CONSTANTES ADICIONADAS
+#define SEND_SERVER_DELAY 30 //seconds
+#define RX1_TIME 30 //seconds
+#define RX2_TIME 30 //seconds, in relation to RX1
+
+void die(const char *s) //lol do a flip
 {
     perror(s);
     exit(1);
@@ -380,6 +385,7 @@ void receivepacket() {
 
     long int SNR;
     int rssicorr;
+    bool received = false;
 
     if(digitalRead(dio0) == 1)
     {
@@ -526,6 +532,7 @@ void receivepacket() {
 
             fflush(stdout);
 
+            received = true;
         } // received a message
         else
         {
@@ -536,6 +543,16 @@ void receivepacket() {
     {
         //printf("CONNECTION ERROR: No package received\n");
     }
+
+    return received;
+}
+
+void rx1_send() {
+
+}
+
+void rx2_send() {
+
 }
 
 int main (int argc, char* argv[]) {
@@ -583,18 +600,37 @@ int main (int argc, char* argv[]) {
     printf("Listening at SF%i on %.6lf Mhz.\n", sf,(double)freq/1000000);
     printf("------------------\n");
 
+    bool received = false;
+    uint32_t received_time = 0;
+    uint8_t downlink_count = 0;
+
     while(1) {
 
-        receivepacket();
+        if(receivepacket()) {
+            received = true;
+            gettimeofday(&nowtime, NULL);
+            received_time = (uint32_t)(nowtime.tv_sec);
+        }
 
         gettimeofday(&nowtime, NULL);
         uint32_t nowseconds = (uint32_t)(nowtime.tv_sec);
-        if (nowseconds - lasttime >= 30) {
+        if (nowseconds - lasttime >= SEND_SERVER_DELAY) {
             lasttime = nowseconds;
             sendstat();
             cp_nb_rx_rcv = 0;
             cp_nb_rx_ok = 0;
             cp_up_pkt_fwd = 0;
+        }
+        if(received) {
+            if( (nowseconds - received_time >= RXT1_TIME) && (downlink_count==0) ) {
+                downlink_count++;
+                rx1_send();
+            }
+            if( (nowseconds - received_time >= RX1_TIME + RX2_TIME) && (downlink_count == 1) ) {
+                downlink_count==0;
+                received=false;
+                rx2_send();
+            }
         }
         delay(1);
     }
